@@ -38,9 +38,9 @@ module Multilang
     def update(value)
       if value.is_a?(Hash)
         clear
-        value.each { |k, v| write(k, v) }
+        value.each { |k, v| write(k, v) if !v.blank?}
       elsif value.is_a?(MultilangTranslationProxy)
-        update(value.translation.translations)
+        update(value.translation.translations.compact_blank)
       elsif value.is_a?(String)
         write(actual_locale, value)
       end
