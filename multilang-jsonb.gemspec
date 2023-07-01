@@ -1,19 +1,19 @@
 # -*- encoding: utf-8 -*-
 $:.push File.expand_path("../lib", __FILE__)
-require "multilang-hstore/version"
+require "multilang-jsonb/version"
 
 Gem::Specification.new do |s|
-  s.name = 'multilang-hstore'
+  s.name = 'multilang-jsonb'
   s.version = Multilang::VERSION
 
-  s.authors = ["Arthur Meinart", "bithavoc"]
-  s.description = 'Model translations for Rails 3 backed by PostgreSQL and Hstore'
+  s.authors = ["Arthur Meinart", "bithavoc", "bluesnotred"]
+  s.description = 'Model translations for Rails backed by PostgreSQL and jsonb'
   s.licenses = ['MIT']
-  s.email = 'im@bithavoc.io'
+  s.email = 'wietse@solidarts.com'
   s.files = `git ls-files`.split($/)
-  s.homepage = "http://bithavoc.io/multilang-hstore/"
+  s.homepage = ""
   s.require_paths = ["lib"]
-  s.summary = %q{Model translations for Rails 3 and Rails 4 backed by PostgreSQL and Hstore}
+  s.summary = %q{Model translations for Rails backed by PostgreSQL and jsonb}
   s.test_files = [
     "spec/multilang_spec.rb",
     "spec/schema.rb",
