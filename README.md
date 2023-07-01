@@ -4,7 +4,7 @@
 
 This project is a fork of [bithavoc/multilang-hstore](https://github.com/bithavoc/multilang-hstore), which was a fork of[artworklv/multilang](https://github.com/artworklv/multilang) with some differences:
 
-* Replaced YAML text fields and Hstore fields in favor of JSONB fields.
+* Replaced YAML text fields and Hstore fields in favor of JSONB fields. (Convert your hstore fields to jsonb)
 * Support for Rails 7.
 
 ## Installation
@@ -106,6 +106,25 @@ Multilang has some validation features:
     multilang :title, :required => 1 #define requirement validator for 1 locale
     multilang :title, :required => [:en, :es] #define requirement validator for specific locales
     multilang :title, :format => /regexp/ #define validates_format_of validator
+
+## Migrating form multilang-hstore to multilang-jsonb
+
+If you want to switch from [bithavoc/multilang-hstore](https://github.com/bithavoc/multilang-hstore to multilang-jsonb, you can use the following ActiveRecord migration as an example to convert your existing hstore fields to jsonb:
+
+    class ConvertMultipleFieldsToJSONB < ActiveRecord::Migration[7.0]
+      def up
+        migrate_to_jsonb("articles", "productname", false)
+        migrate_to_jsonb("articles", "description")
+        migrate_to_jsonb("categories", "name", false)
+      end
+    
+      def migrate_to_jsonb(table_name, fieldname, null_values_allowed = true)
+        rename_column table_name, fieldname, "#{fieldname}_hstore"
+        add_column    table_name, fieldname, :jsonb, default: {}, null: null_values_allowed, index: { using: 'gin' }
+        execute       "UPDATE #{table_name} SET #{fieldname} = json_object(hstore_to_matrix(#{fieldname}_hstore))::jsonb"
+        remove_column table_name, "#{fieldname}_hstore"
+      end
+    end
 
 ## Tests
 
