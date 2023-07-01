@@ -4,18 +4,17 @@ $:.unshift File.expand_path(File.dirname(__FILE__))
 require 'rubygems'
 require 'active_support'
 require 'active_record'
-require 'multilang-hstore'
+require 'multilang-jsonb'
 require 'logger'
 
 ActiveRecord::Base.logger = Logger.new(nil)
 ActiveRecord::Base.establish_connection(:adapter => "postgresql", :host=>'127.0.0.1', :user=>'postgres')
 begin
-ActiveRecord::Base.connection.execute('CREATE DATABASE "multilang-hstore-test" WITH OWNER postgres;')
+ActiveRecord::Base.connection.execute('CREATE DATABASE "multilang-jsonb-test" WITH OWNER postgres;')
 rescue ActiveRecord::StatementInvalid
   puts "Database already exists"
 end
-ActiveRecord::Base.establish_connection(:adapter => "postgresql", :database => "multilang-hstore-test", :host=>'127.0.0.1', :user=>'postgres')
-ActiveRecord::Base.connection.execute('CREATE EXTENSION IF NOT EXISTS hstore;')
+ActiveRecord::Base.establish_connection(:adapter => "postgresql", :database => "multilang-jsonb-test", :host=>'127.0.0.1', :user=>'postgres')
 
 I18n.enforce_available_locales = false
 I18n.available_locales = [:lv, :ru]
@@ -69,7 +68,17 @@ class SloppyPost < ActiveRecord::Base
   multilang :title, required: 1
 end
 
-class SquishedPost < ActiveRecord::Base
-  self.table_name = 'named_posts'
-  multilang :title, squish: true
+class SanitizedPost < ActiveRecord::Base
+  self.table_name = 'abstract_posts'
+  
+  def self.squish(value)
+    value.squish!
+  end
+  
+  def self.sanitize_html(value)
+    value.gsub!(/<\/?[^>]*>/, '')
+  end
+      
+  multilang :title, sanitizer: method(:squish)
+  multilang :body,  sanitizer: method(:sanitize_html)
 end

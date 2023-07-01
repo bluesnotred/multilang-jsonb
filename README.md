@@ -1,34 +1,19 @@
-# Multilang-hstore
+# Multilang-jsonb
 
-[![Build Status](https://travis-ci.org/bithavoc/multilang-hstore.svg)](https://travis-ci.org/bithavoc/multilang-hstore)
+> Multilang is a small translation library for translating database values for Active Support/Rails using the [jsonb datatype](https://www.postgresql.org/docs/15/functions-json.html).
 
-> Multilang is a small translation library for translating database values for Active Support/Rails 4 using the [Hstore datatype](http://www.postgresql.org/docs/9.0/static/hstore.html).
+This project is a fork of [bithavoc/multilang-hstore](https://github.com/bithavoc/multilang-hstore), which was a fork of[artworklv/multilang](https://github.com/artworklv/multilang) with some differences:
 
-This project is a fork of [artworklv/multilang](https://github.com/artworklv/multilang) with some remarkable differences:
-
-* Replaced YAML text fields in favor of Hstore fields.
-* The translation hash is no longer limited to locales in `I18n.available_locales`.
-* Support for Rails 3 and Rails 4.
+* Replaced YAML text fields and Hstore fields in favor of JSONB fields. (Convert your hstore fields to jsonb)
+* Support for Rails 7.
 
 ## Installation
 
-### Rails 3
-
-The last version of the gem for the Rails 3 series is [0.4](https://github.com/bithavoc/multilang-hstore/tree/v0.4). You need configure the multilang gem inside your gemfile:
-
-    gem 'multilang-hstore'
-
-Do not forget to run:
-
-    bundle install
-
-### Rails 4
-
-Starting with version `1.0.0`, this gem is intented to be used in Rails 4. If you are migrating an existing project from Rails 3, make sure you read [Migrating to Rails 4](#Migrating-to-Rails-4).
+### Rails 7
 
 You need configure the multilang gem inside your gemfile:
 
-    gem 'multilang-hstore', '~> 1.0.0'
+    gem 'multilang-jsonb', '~> 1.0.0'
 
 Do not forget to run:
 
@@ -52,10 +37,10 @@ or
 
 The multilang translations are stored in the same model attributes (eg. title):
 
-You may need to create migration for Post as usual, but multilang attributes should be in hstore type:
+You may need to create migration for Post as usual, but multilang attributes should be in jsonb type:
   
     create_table(:posts) do |t|
-      t.hstore :title
+      t.jsonb :title
       t.timestamps
     end
 
@@ -122,17 +107,32 @@ Multilang has some validation features:
     multilang :title, :required => [:en, :es] #define requirement validator for specific locales
     multilang :title, :format => /regexp/ #define validates_format_of validator
 
+## Migrating form multilang-hstore to multilang-jsonb
+
+If you want to switch from [bithavoc/multilang-hstore](https://github.com/bithavoc/multilang-hstore to multilang-jsonb, you can use the following ActiveRecord migration as an example to convert your existing hstore fields to jsonb:
+
+    class ConvertMultipleFieldsToJSONB < ActiveRecord::Migration[7.0]
+      def up
+        migrate_to_jsonb("articles", "productname", false)
+        migrate_to_jsonb("articles", "description")
+        migrate_to_jsonb("categories", "name", false)
+      end
+    
+      def migrate_to_jsonb(table_name, fieldname, null_values_allowed = true)
+        rename_column table_name, fieldname, "#{fieldname}_hstore"
+        add_column    table_name, fieldname, :jsonb, default: {}, null: null_values_allowed, index: { using: 'gin' }
+        execute       "UPDATE #{table_name} SET #{fieldname} = json_object(hstore_to_matrix(#{fieldname}_hstore))::jsonb"
+        remove_column table_name, "#{fieldname}_hstore"
+      end
+    end
+
 ## Tests
 
 Test runs using a temporary database in your local PostgreSQL server:
 
 Create a test database:
 
-    $ createdb multilang-hstore-test
-
-Create the [hstore extension](http://www.postgresql.org/docs/9.1/static/sql-createextension.html):
-
-    psql -d multilang-hstore-test -c "CREATE EXTENSION IF NOT EXISTS hstore"
+    $ createdb multilang-jsonb-test
 
 Create the role *postgres* if necessary:
 
@@ -142,39 +142,13 @@ Finally, you can run your tests:
   
     rspec	
 
-## Migrating to Rails 4
-
-Migrating to Rails 4 and multilang-hstore 1.x is a very straightforward process.
-
-### Deprecated Dependencies
-
-Rails 4 has built-in support for `hstore` datatype, so using any dependency to `activerecord-postgres-hstore` must be removed from your Gemfile:
-
-### Mass-Assignment 
-
-Mass-assignment was deprecated in Rails 4, so it was in our gem. You will receive an error similar to this:
-
-    Multilang::Exceptions::DeprecationError: :accessible was deprecated starting multilang-hstore >= 1.0.0 which is intended for Rails >= 4.0.0. Check more info about the deprecation of mass-asignment in Rails 4
-
-This basically means you are trying to use the option `:accessible` which is deprecated. Removing the option will solve the issue:
-
-Before:
-
-	class Post < ActiveRecord::Base
-	  multilang :title, :accessible=>true
-	end
-
-After:
-
-    class Post < ActiveRecord::Base
-      multilang :title
-	end
 
 ## Bugs and Feedback
 
-Use [http://github.com/bithavoc/multilang-hstore/issues](http://github.com/bithavoc/multilang-hstore/issues)
+Use [http://github.com/bluesnotred/multilang-jsonb/issues](http://github.com/bluesnotred/multilang-jsonb/issues)
 
 ## License(MIT)
 
+* Copyright (c) 2017 - 2023 Bluesnotred and Contributors
 * Copyright (c) 2012 - 2014 Bithavoc and Contributors - http://bithavoc.io
 * Copyright (c) 2010 Arthur Meinart
